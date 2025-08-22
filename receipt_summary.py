@@ -1,41 +1,57 @@
-from data_cleaner import clean_receipts, create_stable_lookup
+import pandas as pd
+
+CLEANED_FILE = "Receipts_database_cleaned.xlsx"
 
 def main():
-    # Step 1: Clean raw receipts
-    df = clean_receipts("Receipts_database.xlsx")
+    print("=== RECEIPT SUMMARY ===")
 
-    # Step 2: Update lookup table
-    lookup_df = create_stable_lookup(df, "item_lookup.xlsx")
+    # Step 1: Load cleaned receipts
+    try:
+        df = pd.read_excel(CLEANED_FILE)
+    except FileNotFoundError:
+        raise SystemExit(f"❌ {CLEANED_FILE} not found. Run update_receipt_lookup.py first.")
 
-    # Step 3: Detect & report potential conflicts
-    print("\n⚠ Checking for potential conflicts...\n")
-    # For each store/item_clean, check if multiple product codes exist
-    grouped = lookup_df.groupby(['store', 'item_clean'])
-    for (store, item_clean), group in grouped:
-        codes = group['productCode'].dropna().unique()
-        if len(codes) > 1:
-            print(f"⚠ Multiple codes for '{item_clean}' (store: {store}): {list(codes)}")
-
-    # Step 4: Summary stats
+    # Step 2: Basic stats
     total_rows = len(df)
     unique_items = df['item_clean'].nunique()
-    most_frequent = df.groupby('item_clean').agg(
-        count=('item_clean', 'size'),
-        total_quantity=('quantity', 'sum'),
-        total_spend=('total_value', 'sum')
-    ).sort_values('count', ascending=False).head(10)
+    total_spend = df['total_value'].sum()
 
-    # Step 5: Output summary
-    print("\n===== RECEIPT SUMMARY =====")
+    # Step 3: Top items
+    most_frequent = (
+        df.groupby('item_clean')
+          .agg(
+              count=('item_clean', 'size'),
+              total_quantity=('quantity', 'sum'),
+              total_spend=('total_value', 'sum')
+          )
+          .sort_values('count', ascending=False)
+          .head(10)
+    )
+
+    # Step 4: Spending over time
+    spend_by_month = (
+        df.groupby(df['date'].dt.to_period('M'))['total_value']
+          .sum()
+          .reset_index()
+          .rename(columns={'date': 'month', 'total_value': 'monthly_spend'})
+    )
+
+    # Step 5: Print summary
     print(f"Total rows: {total_rows}")
-    print(f"Number of unique items: {unique_items}")
-    print("\nMost frequent items (with quantity & spend):")
+    print(f"Unique items: {unique_items}")
+    print(f"Total spend: £{total_spend:,.2f}")
+    print("\nMost frequent items:")
     print(most_frequent)
+    print("\nMonthly spend trend:")
+    print(spend_by_month)
 
-    # Save cleaned receipts
-    df.to_excel("Receipts_database_cleaned.xlsx", index=False)
-    print("\n✅ Cleaned receipts saved as Receipts_database_cleaned.xlsx")
-    print("✅ Lookup table updated at item_lookup.xlsx")
+    # (Optional) Save summaries
+    with pd.ExcelWriter("Receipt_Summary.xlsx") as writer:
+        df.to_excel(writer, sheet_name="Cleaned Receipts", index=False)
+        most_frequent.to_excel(writer, sheet_name="Top Items")
+        spend_by_month.to_excel(writer, sheet_name="Monthly Spend", index=False)
+
+    print("\n✅ Summary saved to Receipt_Summary.xlsx")
 
 
 if __name__ == "__main__":
