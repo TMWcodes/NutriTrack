@@ -1,6 +1,6 @@
 import pandas as pd
 
-CLEANED_FILE = "Receipts_database_cleaned.xlsx"
+CLEANED_FILE = "Receipts_cleaned.xlsx"
 
 def main():
     print("=== RECEIPT SUMMARY ===")
