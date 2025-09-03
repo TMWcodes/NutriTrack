@@ -7,7 +7,8 @@ from price_analysis_mock import (
     plot_item_prices,
     get_top_items_with_quantity_and_value,
     get_top_selling_items,
-    unique_items
+    unique_items,
+    buy_sell_summary
 )
 
 FINAL_CLEANED_FILE = "mock_cleaned.xlsx"  # The single cleaned file with codes
@@ -36,8 +37,14 @@ def main():
     print(top_items)
 
     top_sales = get_top_selling_items(df, n=5)
-    print("\n💰 Top 5 Items by Total Sales (£):")
+    print("\n Top 5 Items by Total Sales (£):")
     print(top_sales)
+    
+    summary = buy_sell_summary(df)
+    print("\nBuy/Sell Summary:")
+    for k, v in summary.items():
+        print(f"{k}: {v}")
+    print()
 
     # Step 4: Optional price trend plot
     search_term = input("\n🔍 Enter item name to plot trends (or leave blank to skip): ").strip()

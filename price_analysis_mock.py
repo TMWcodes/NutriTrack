@@ -30,6 +30,23 @@ def calculate_weighted_averages(df):
 
     return price_trends
 
+# ----------------------------------------
+# Buy vs Sell summary
+# ----------------------------------------
+def buy_sell_summary(df):
+    """
+    Returns total buy value, total sell value, and net difference (£).
+    Uses precomputed 'total_value' column from the cleaned data.
+    """
+    total_buy = df.loc[df['state'] == 'BOUGHT', 'total_value'].sum()
+    total_sell = df.loc[df['state'] == 'SOLD', 'total_value'].sum()
+    difference = total_sell - total_buy
+
+    return {
+        "Total Buy (£)": f"£{total_buy:,.2f}",
+        "Total Sell (£)": f"£{total_sell:,.2f}",
+        "Difference (£)": f"£{difference:,.2f}"
+    }
 
 # ----------------------------------------
 # Plot price trends for a specific item
